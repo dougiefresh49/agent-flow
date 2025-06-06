@@ -34,9 +34,24 @@ Agent Flow is a modular, extensible agent platform inspired by modern no-code an
 ```json
 {
   "nodes": [
-    { "id": "input_1", "type": "customInput", "position": { "x": 100, "y": 100 }, "data": { "label": "User Query" } },
-    { "id": "agent_1", "type": "agent", "position": { "x": 300, "y": 100 }, "data": { "tools": ["search", "summarize"] } },
-    { "id": "output_1", "type": "customOutput", "position": { "x": 500, "y": 100 }, "data": { "label": "Result" } }
+    {
+      "id": "input_1",
+      "type": "customInput",
+      "position": { "x": 100, "y": 100 },
+      "data": { "label": "User Query" }
+    },
+    {
+      "id": "agent_1",
+      "type": "agent",
+      "position": { "x": 300, "y": 100 },
+      "data": { "tools": ["search", "summarize"] }
+    },
+    {
+      "id": "output_1",
+      "type": "customOutput",
+      "position": { "x": 500, "y": 100 },
+      "data": { "label": "Result" }
+    }
   ],
   "edges": [
     { "source": "input_1", "target": "agent_1" },
@@ -48,17 +63,67 @@ Agent Flow is a modular, extensible agent platform inspired by modern no-code an
 ## Getting Started
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Run the development server:**
+
    ```bash
    npm run dev
    ```
 
 3. **Open your browser:**
    Visit [http://localhost:3000](http://localhost:3000) to see the app.
+
+## Prerequisites
+
+### Supabase Setup
+
+1. **Create a Supabase project** at [https://supabase.com/](https://supabase.com/).
+
+2. **Get your API URL and anon key:**
+
+   - [API Settings (/settings/api)](https://supabase.com/dashboard/project/<projectID>/settings/api)
+   - [Anon Key (/settings/api-keys)](https://supabase.com/dashboard/project/<projectID>/settings/api-keys)
+   - Replace `<projectID>` with your actual Supabase project ID.
+
+3. **Create the required `flows` table and enable RLS:**
+
+   Run the following SQL in the [Supabase SQL Editor](https://supabase.com/dashboard/project/<projectID>/sql):
+
+   ```sql
+   create table public.flows (
+     id uuid primary key default gen_random_uuid(),
+     user_id uuid not null,
+     name text not null,
+     description text,
+     graph_json jsonb,
+     updated_at timestamp with time zone default now()
+   );
+
+   create index flows_user_id_idx on public.flows(user_id);
+
+   -- Optional: Reference Supabase users table
+   alter table public.flows add constraint flows_user_id_fkey foreign key (user_id) references auth.users(id);
+
+   -- Enable RLS
+   alter table public.flows enable row level security;
+
+   -- Allow users to manage their own flows
+   create policy "Users can manage their own flows" on public.flows
+     for all
+     using (auth.uid() = user_id);
+   ```
+
+### Composio Setup
+
+1. **Sign up for Composio** at [https://composio.dev/](https://composio.dev/).
+2. **Get your Composio API key** from your [Composio dashboard](https://app.composio.dev/).
+3. **Configure your environment variables** as needed for Composio integration.
+
+---
 
 ## Project Structure
 
@@ -69,7 +134,7 @@ Agent Flow is a modular, extensible agent platform inspired by modern no-code an
 
 ## Extending the Platform
 
-- **Add new nodes:** Create new node types in the `components/` directory and register them in the workflow builder.   
+- **Add new nodes:** Create new node types in the `components/` directory and register them in the workflow builder.
 - **Authentication:** Composio handles OAuth, API keys, and other auth flows automatically via a unified modal.
 
 ## Contributing
